@@ -1,1 +1,3 @@
 .idea
+td/*
+!td/main.go

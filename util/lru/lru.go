@@ -1,3 +1,8 @@
+// LRU缓存
+// 暂时还没有用
+// 减少访问次数，减少调用API的次数，当然现在只是爬网页的；
+// 但是毕竟拿人手短，so...
+
 package lru
 
 type LRU interface {

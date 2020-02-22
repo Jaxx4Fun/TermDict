@@ -15,7 +15,7 @@ func NewDict() *Dict{
 //
 const queryURLPattern = "http://www.youdao.com/w/%s"
 
-var pageParser = NewParser()
+var responseParser = ParserFunc(ParseHTML)
 
 func (y *Dict) LookUp(word string) *base.Word {
 	url := fmt.Sprintf(queryURLPattern, word)
@@ -26,13 +26,13 @@ func (y *Dict) LookUp(word string) *base.Word {
 		return nil
 	}
 	defer resp.Body.Close()
-
-	wd, err := pageParser.Parse(resp.Body)
+	wd, err := responseParser.Parse(resp.Body)
 	if err != nil {
 		log.Fatalf("parse resp body error, %v", err)
 	}
 
 	wd.Spell = word
+	wd.From = base.Youdao
 
 	return wd
 }

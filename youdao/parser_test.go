@@ -11,11 +11,11 @@ func TestPageParser(t *testing.T) {
 	t.Run("look up \"what\" from youdao and parse it", func(t *testing.T) {
 		url := "http://www.youdao.com/w/what"
 		resp := mustGetResponse(t, url)
-		parser := youdao.NewParser()
+		parser := youdao.ParserFunc(youdao.ParseHTML)
 		wd, err := parser.Parse(resp.Body)
 
 		assertNoError(t, err)
-		assertExpainNum(t, wd, 4)
+		assertTranslationNum(t, wd, 4)
 		if len(wd.Examples) <= 0{
 			t.Log("got no examples")
 		}
@@ -23,7 +23,7 @@ func TestPageParser(t *testing.T) {
 
 }
 
-func assertExpainNum(t *testing.T, wd *base.Word, want int) {
+func assertTranslationNum(t *testing.T, wd *base.Word, want int) {
 	t.Helper()
 	if len(wd.Trans) != want {
 		t.Errorf("explain got %d, want %d", len(wd.Trans), want)

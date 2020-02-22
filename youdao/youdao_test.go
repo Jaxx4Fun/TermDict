@@ -1,8 +1,8 @@
 package youdao_test
 
 import (
-	"github.com/quii/learn-go-with-tests/mytest/TermDict"
-	"github.com/quii/learn-go-with-tests/mytest/TermDict/youdao"
+	"github.com/Johnny4Fun/TermDict/base"
+	"github.com/Johnny4Fun/TermDict/youdao"
 	"testing"
 )
 
@@ -16,7 +16,7 @@ func TestYoudaoDict(t *testing.T) {
 	})
 }
 
-func checkWordSpell(t *testing.T, word *TermDict.Word, spell string) {
+func checkWordSpell(t *testing.T, word *base.Word, spell string) {
 	t.Helper()
 	if word.Spell != spell{
 		t.Errorf("got result for %q, expect %q", word.Spell, spell)

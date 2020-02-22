@@ -2,23 +2,32 @@ package youdao
 
 import (
 	"fmt"
+	"github.com/Johnny4Fun/TermDict/base"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/quii/learn-go-with-tests/mytest/TermDict"
 	"io"
 	"strings"
 )
 
-type Parser struct {
+type Parser interface {
+	Parse(r io.Reader) (*base.Word, error)
 }
 
-func NewParser() *Parser {
-	return &Parser{}
+type ParserFunc func(r io.Reader) (*base.Word, error)
+
+func (f ParserFunc) Parse(r io.Reader) (*base.Word, error) {
+	return f(r)
 }
 
-func (p *Parser) Parse(r io.Reader) (*TermDict.Word, error) {
-	wd := new(TermDict.Word)
+const (
+	domIndexEnglish = iota
+	domIndexChinese
+	domIndexFrom
+)
 
-	document, err := goquery.NewDocumentFromReader(r)
+func ParseHTML(html io.Reader) (*base.Word, error) {
+	wd := new(base.Word)
+
+	document, err := goquery.NewDocumentFromReader(html)
 	if err != nil {
 		return nil, fmt.Errorf("failed to use goquery extract html, %v", err)
 	}
@@ -28,7 +37,7 @@ func (p *Parser) Parse(r io.Reader) (*TermDict.Word, error) {
 	//translations
 	resultContainer.Find("#phrsListTab>.trans-container>ul>li").Each(func(i int, selection *goquery.Selection) {
 		text := selection.Text()
-		trans := splitTranslation(text)
+		trans := getTranslation(text)
 
 		if trans != nil {
 			wd.Trans = append(wd.Trans, *trans)
@@ -37,32 +46,62 @@ func (p *Parser) Parse(r io.Reader) (*TermDict.Word, error) {
 	})
 
 	// example sentences
-	//resultContainer.Find("div.phrsListTab > ")
+	liSlice := resultContainer.Find("#examplesToggle > #bilingual > ul > li")
+	size := liSlice.Size()
+	wd.Examples = make([]base.Example, size)
+
+	liSlice.Each(func(i int, li *goquery.Selection) {
+
+		sel := li.Find("p")
+
+		eng := trimBlankToken(sel.Eq(domIndexEnglish).Text())
+		chn := trimBlankToken(sel.Eq(domIndexChinese).Text())
+		from := trimBlankToken(sel.Eq(domIndexFrom).Text())
+
+		example := base.Example{
+			Sentence:    eng,
+			Translation: chn,
+			From:        base.ExampleSrc(from),
+		}
+
+		wd.Examples[i] = example
+	})
 
 	return wd, nil
-
 }
 
 // split translation into 2 parts: POS & translation
-func splitTranslation(text string) *TermDict.Translation {
+func getTranslation(text string) *base.Translation {
 
 	var pos string
 	var trans string
+	if base.OptSeparatePosAndTrans {
+		var posAndTrans = strings.SplitN(text, " ", 2)
 
-	transs := strings.SplitN(text, " ", 1)
-
-	if l:= len(transs); l >= 2 {
-		pos = transs[0]
-		trans = transs [1]
-	}else if l == 1 {
-		trans = transs[0]
-	}else {
-		return nil
+		if l := len(posAndTrans); l >= 2 {
+			pos = posAndTrans[0]
+			trans = posAndTrans [1]
+		} else if l == 1 {
+			trans = posAndTrans[0]
+		} else {
+			return nil
+		}
+	} else {
+		trans = text
 	}
-	ts := TermDict.Translation{
+	ts := base.Translation{
 		POS:   pos,
 		Trans: trans,
 	}
 	return &ts
 }
 
+func trimBlankToken(s string) string {
+	return strings.TrimFunc(s, func(r rune) bool {
+		switch r {
+		case '\n', '\t', ' ':
+			return true
+		}
+		return false
+	})
+}
