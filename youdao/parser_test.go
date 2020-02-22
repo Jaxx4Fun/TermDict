@@ -1,8 +1,8 @@
 package youdao_test
 
 import (
-	"github.com/quii/learn-go-with-tests/mytest/TermDict"
-	"github.com/quii/learn-go-with-tests/mytest/TermDict/youdao"
+	"github.com/Johnny4Fun/TermDict/base"
+	"github.com/Johnny4Fun/TermDict/youdao"
 	"net/http"
 	"testing"
 )
@@ -23,7 +23,7 @@ func TestPageParser(t *testing.T) {
 
 }
 
-func assertExpainNum(t *testing.T, wd *TermDict.Word, want int) {
+func assertExpainNum(t *testing.T, wd *base.Word, want int) {
 	t.Helper()
 	if len(wd.Trans) != want {
 		t.Errorf("explain got %d, want %d", len(wd.Trans), want)

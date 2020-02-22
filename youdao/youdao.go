@@ -2,7 +2,7 @@ package youdao
 
 import (
 	"fmt"
-	"github.com/quii/learn-go-with-tests/mytest/TermDict"
+	"github.com/Johnny4Fun/TermDict/base"
 	"log"
 	"net/http"
 )
@@ -17,7 +17,7 @@ const queryURLPattern = "http://www.youdao.com/w/%s"
 
 var pageParser = NewParser()
 
-func (y *Dict) LookUp(word string) *TermDict.Word {
+func (y *Dict) LookUp(word string) *base.Word {
 	url := fmt.Sprintf(queryURLPattern, word)
 	resp, err := http.Get(url)
 	if err != nil {

@@ -1,4 +1,4 @@
-package util
+package lru
 
 type Object interface {
 	Key() string
