@@ -16,11 +16,19 @@ func TestPageParser(t *testing.T) {
 
 		assertNoError(t, err)
 		assertTranslationNum(t, wd, 4)
-		if len(wd.Examples) <= 0{
+		assertPronunciationNum(t, wd, 2)
+		if len(wd.Examples) <= 0 {
 			t.Log("got no examples")
 		}
 	})
 
+}
+
+func assertPronunciationNum(t *testing.T, wd *base.Word, want int) {
+	t.Helper()
+	if l := len(wd.Pronounce); l != want {
+		t.Errorf("got %d pronunciation, want %d", l, want)
+	}
 }
 
 func assertTranslationNum(t *testing.T, wd *base.Word, want int) {

@@ -8,7 +8,7 @@ import (
 
 func TestYoudaoDict(t *testing.T) {
 	yd := youdao.NewDict()
-	t.Run("test look a word", func(t *testing.T) {
+	t.Run("test look up a word", func(t *testing.T) {
 		word := "fool"
 		got := yd.LookUp(word)
 
@@ -18,7 +18,7 @@ func TestYoudaoDict(t *testing.T) {
 
 func checkWordSpell(t *testing.T, word *base.Word, spell string) {
 	t.Helper()
-	if word.Spell != spell{
+	if word.Spell != spell {
 		t.Errorf("got result for %q, expect %q", word.Spell, spell)
 	}
 }

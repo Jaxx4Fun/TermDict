@@ -9,9 +9,11 @@ import (
 
 type Dict struct {
 }
-func NewDict() *Dict{
+
+func NewDict() *Dict {
 	return &Dict{}
 }
+
 //
 const queryURLPattern = "http://www.youdao.com/w/%s"
 
@@ -26,13 +28,17 @@ func (y *Dict) LookUp(word string) *base.Word {
 		return nil
 	}
 	defer resp.Body.Close()
+	//go func() {
+	//	filePath := base.EnvTermDictRoot +word
+	//	os.OpenFile(filePath, os.o_)
+	//}()
 	wd, err := responseParser.Parse(resp.Body)
 	if err != nil {
 		log.Fatalf("parse resp body error, %v", err)
 	}
 
 	wd.Spell = word
-	wd.From = base.Youdao
+	wd.Source = base.Youdao
 
 	return wd
 }

@@ -17,7 +17,7 @@ func TestWord_String(t *testing.T) {
 				"你好世界",
 				"Jun",},
 		},
-		From: base.Youdao,
+		Source: base.Youdao,
 	}
 
 	fmt.Println(word)

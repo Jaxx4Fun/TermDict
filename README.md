@@ -4,29 +4,38 @@ TermDict是一个命令行词典项目。
 
 ## 目录说明
 ```bash
-TermDict
-├── base                                    # 存放基本数据结构定义，如Word
-│   ├── base.go                                     
-│   └── base_test.go
-├── td                                      # td=TerminalDict                           
-│   └── main.go                             # main入口
+.
+.
+├── app                                     //可执行文件的目录
+│   ├── td                                  //简易版本，直接通过http查词
+│   ├── td_client                           //rpc版本的客户端
+│   └── td_server                           //rpc服务
+├── base                                    //基础数据结构、常量
+│   ├── base.go
+│   ├── base_test.go
+│   ├── const.go
+│   └── dict.go
 ├── go.mod
 ├── go.sum
 ├── README.md
-├── util                                    # 工具目录
-│   └── lru                                 # lru（暂时未使用）
-│       ├── lru.go
-│       ├── lru_test.go
-│       └── node.go
-└── youdao                                  # 有道
-    ├── parser.go                           # 页面解析/JSON解析
-    ├── parser_test.go          
-    ├── youdao.go                           # http访问youdao
+├── util                                    //工具
+│   ├── cache                               //缓存
+│   │   ├── cache.go                        //缓存的抽象定义
+│   │   ├── lru.go                          //lru，非线程安全
+│   │   ├── lru_test.go
+│   │   ├── lru_threadsafe.go               //包装后的lru，线程安全
+│   │   ├── lru_threadsafe_test.go
+│   │   └── node.go
+│   └── util.go
+└── youdao                                  //有道词典的请求与解析
+    ├── parser.go                           //目前仅解析http，后续考虑直接访问api，解析json
+    ├── parser_test.go                  
+    ├── youdao.go                           
     └── youdao_test.go
 ```
 
 
-## 安装
+## 简易版本安装
 ### 前提
 ```bash
 # 设置环境变量GOBIN，后续install在该目录下
@@ -39,6 +48,7 @@ export $PATH=$PATH:$GOBIN
 cd TermDict
 go install ./td/
  ```
+## TODO: C/S版本安装
 ## 使用
 ```shell script
 # 查询单词, 格式td <word>，如：

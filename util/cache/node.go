@@ -1,4 +1,4 @@
-package lru
+package cache
 
 type Object interface {
 	Key() string
@@ -10,8 +10,8 @@ type Node struct {
 	data Object
 }
 
-func NewNode(obj Object) *Node{
+func NewNode(obj Object) *Node {
 	return &Node{
-		data:obj,
+		data: obj,
 	}
 }

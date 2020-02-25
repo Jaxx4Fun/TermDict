@@ -3,28 +3,25 @@
 // 减少访问次数，减少调用API的次数，当然现在只是爬网页的；
 // 但是毕竟拿人手短，so...
 
-package lru
+package cache
 
 type LRU interface {
-	Add(object Object)
-	PopFront() Object
-	Get(key string) Object
-	Size() uint
+	Cache
 	GetContentByOrder() []Object
-	ClearWithFunc(closeFunc func(object Object) bool)
 }
 
 type LRUCache struct {
+	// TODO: replace my defined doubly linked list with container/list
 	dList struct {
 		start *Node
 		end   *Node
 	}
-	cap        uint //capacity of lru
-	len        uint //current len of lru
+	cap        uint //capacity of cache
+	len        uint //current len of cache
 	storageMap map[string]*Node
 }
 
-//NewLRUCache create a lru and return the pointer of it
+//NewLRUCache create a cache and return the pointer of it
 func NewLRUCache(capacity uint) *LRUCache {
 	lru := &LRUCache{
 		cap:        capacity,

@@ -34,10 +34,17 @@ func ParseHTML(html io.Reader) (*base.Word, error) {
 
 	resultContainer := document.Find("div#results-contents").First()
 
+	// pronunciation
+	document.Find("span.pronounce").Each(func(i int, selection *goquery.Selection) {
+		text := selection.Text()
+		pron := extractPronunciation(text)
+		wd.Pronounce = append(wd.Pronounce, pron)
+	})
+
 	//translations
 	resultContainer.Find("#phrsListTab>.trans-container>ul>li").Each(func(i int, selection *goquery.Selection) {
 		text := selection.Text()
-		trans := getTranslation(text)
+		trans := extractTranslation(text)
 
 		if trans != nil {
 			wd.Trans = append(wd.Trans, *trans)
@@ -70,8 +77,22 @@ func ParseHTML(html io.Reader) (*base.Word, error) {
 	return wd, nil
 }
 
+func extractPronunciation(text string) base.Pronunciation {
+
+	text = filterFunc(text, func(r rune) bool {
+		switch r {
+		case '\n', '\t', ' ':
+			return true
+		}
+		return false
+	})
+	// 英[ju;juː] ---> 英 [ju;juː]
+	pronAfterFmt := fmt.Sprintf("%s %s", text[:3], text[3:])
+	return base.Pronunciation(pronAfterFmt)
+}
+
 // split translation into 2 parts: POS & translation
-func getTranslation(text string) *base.Translation {
+func extractTranslation(text string) *base.Translation {
 
 	var pos string
 	var trans string
@@ -104,4 +125,14 @@ func trimBlankToken(s string) string {
 		}
 		return false
 	})
+}
+
+func filterFunc(s string, f func(r rune) bool) string {
+	sb := strings.Builder{}
+	for _, r := range s {
+		if !f(r) {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
 }
