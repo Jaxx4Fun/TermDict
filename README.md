@@ -36,16 +36,16 @@ TermDict是一个命令行词典项目。
 
 
 ## 简易版本安装
-### 前提
+### 环境变量设置
 ```bash
-# 设置环境变量GOBIN，后续install在该目录下
+# 设置环境变量GOBIN，这样执行go instasll后，二进制文件就会被安装到GOBIN目录下
 export $GOBIN=<放二进制文件的目录>
-# 将GOBIN目录添加到PATH方便查找
+# 将GOBIN目录添加到PATH
 export $PATH=$PATH:$GOBIN
 ```
 ### 安装
 ```bash
-cd TermDict
+cd TermDict/app/
 go install ./td/
  ```
 ## TODO: C/S版本安装
