@@ -2,13 +2,14 @@ package rpcserver
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"time"
+
 	"github.com/Johnny4Fun/TermDict/base"
 	"github.com/Johnny4Fun/TermDict/util/cache"
 	"github.com/Johnny4Fun/TermDict/youdao"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"log"
-	"time"
 )
 
 const (
@@ -16,16 +17,16 @@ const (
 )
 
 type RPCDict struct {
-	lru        cache.Cache
+	lru        cache.ICache
 	dict       base.Dict
 	resultChan chan *base.Word
 }
 
 func DefaultRPCDict() *RPCDict {
-	return NewRPCDict(DefaultLRUCache, DefaultYoudaoDict)
+	return NewRPCDict(DefaultCache, DefaultYoudaoDict)
 }
 
-func NewRPCDict(cache cache.Cache, dict base.Dict) *RPCDict {
+func NewRPCDict(cache cache.ICache, dict base.Dict) *RPCDict {
 	return &RPCDict{
 		lru:  cache,
 		dict: dict,
@@ -49,10 +50,10 @@ func (s *RPCDict) LookUp(args *Args, reply *RemoteReply) error {
 	return nil
 }
 
-var DefaultLRUCache = cache.NewThreadSafeLRU(cache.NewLRUCache(base.CacheCapacity))
+var DefaultCache = cache.NewThreadSafeLRU(cache.NewLRUCache(base.CacheCapacity))
 var DefaultYoudaoDict = youdao.NewDict()
 
-func dictHelper(word string, cache cache.Cache, dict base.Dict) *base.Word {
+func dictHelper(word string, cache cache.ICache, dict base.Dict) *base.Word {
 	// 放外面在并发的时候应该会出问题
 	var cacheChan = make(chan *base.Word, 1)
 	var dictChan = make(chan *base.Word, 1)
@@ -78,7 +79,7 @@ func dictHelper(word string, cache cache.Cache, dict base.Dict) *base.Word {
 		return wd
 	case wd := <-dictChan:
 		wd.From = base.Online
-		cache.Add(wd)
+		cache.Add(wd.Spell, wd)
 		return wd
 	case <-time.After(10 * time.Second):
 		log.Printf("timed out to look up %s", word)
@@ -129,6 +130,6 @@ func RecoverFromCacheFiles() {
 			continue
 		}
 
-		DefaultLRUCache.Add(wd)
+		DefaultCache.Add(wd.Spell, wd)
 	}
 }

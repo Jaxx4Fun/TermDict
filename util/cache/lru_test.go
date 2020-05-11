@@ -1,7 +1,9 @@
-package cache_test
+package cache
 
 import (
-	"github.com/Johnny4Fun/TermDict/util/cache"
+	"container/list"
+	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -9,16 +11,18 @@ import (
 	"time"
 )
 
-type TestObject struct {
-	key string
-}
+type TestObject int
 
-func (o *TestObject) Key() string {
-	return o.key
-}
-func (o *TestObject) String() string {
-	return o.Key()
-}
+// type TestObject struct {
+// 	key string
+// }
+
+// func (o *TestObject) Key() string {
+// 	return o.key
+// }
+// func (o *TestObject) String() string {
+// 	return o.Key()
+// }
 
 func checkLoop(interval time.Duration, until func() bool) {
 	ticker := time.NewTicker(interval)
@@ -33,9 +37,9 @@ func checkLoop(interval time.Duration, until func() bool) {
 	}
 }
 
-func batchAddMultiThread(lru *cache.ThreadSafeLRUWrapper, ins ...int) *sync.WaitGroup {
+func batchAddMultiThread(lru *ThreadSafeLRUWrapper, ins ...int) *sync.WaitGroup {
 	return doConcurrently(func(index int) {
-		lru.Add(&TestObject{key: strconv.Itoa(index)})
+		lru.Add(index, index)
 	}, ins...)
 }
 
@@ -51,11 +55,34 @@ func doConcurrently(f func(index int), ids ...int) *sync.WaitGroup {
 	}
 	return wg
 }
+func serializeLruContent(lru LRU) (ans []string) {
+	var t interface{}
+	t = lru
+	var underlyingList *list.List
+	switch t := t.(type) {
+	case *LRUCache:
+		underlyingList = t.timeList
+	case *ThreadSafeLRUWrapper:
+		underlyingList = t.lru.(*LRUCache).timeList
+	default:
+		panic("lru is not LRU")
+	}
 
-func assertLRUTailContent(t *testing.T, lru cache.LRU, want []string) {
+	for iter := underlyingList.Front(); iter != nil; iter = iter.Next() {
+		o := iter.Value.(entry).obj
+		switch t := o.(type) {
+		case int:
+			ans = append(ans, strconv.Itoa(t))
+		default:
+			ans = append(ans, fmt.Sprintf("%v", t))
+		}
+	}
+	return
+}
+func assertLRUTailContent(t *testing.T, lru LRU, want []string) {
 	t.Helper()
 
-	objs := lru.GetContentByOrder()
+	objs := serializeLruContent(lru)
 
 	if got, want := len(objs), len(want); got <= want {
 		t.Errorf("got %d, want %d", got, want)
@@ -86,19 +113,18 @@ func within(t *testing.T, duration time.Duration, f func()) {
 }
 func TestLRU(t *testing.T) {
 	t.Run("empty Cache pop", func(t *testing.T) {
-		lru := cache.NewLRUCache(10)
+		lru := NewLRUCache(10)
 
-		obj := lru.PopFront()
+		obj := lru.PopOldest()
 
 		assertObject(t, obj, nil)
 	})
 
 	t.Run("Cache add", func(t *testing.T) {
-		lru := cache.NewLRUCache(10)
+		lru := NewLRUCache(10)
 
 		for i := 0; i < 10; i++ {
-			obj := &TestObject{strconv.Itoa(i)}
-			lru.Add(obj)
+			lru.Add(i, i)
 		}
 
 		assertCacheSize(t, lru, 10)
@@ -108,8 +134,7 @@ func TestLRU(t *testing.T) {
 
 		t.Run("Cache add more the capacity cap", func(t *testing.T) {
 			for i := 10; i < 20; i++ {
-				obj := &TestObject{strconv.Itoa(i)}
-				lru.Add(obj)
+				lru.Add(i, i)
 			}
 
 			assertCacheSize(t, lru, 10)
@@ -123,10 +148,9 @@ func TestLRU(t *testing.T) {
 	})
 
 	//t.Run("query when cache is not empty", func(t *testing.T) {
-	lru := cache.NewLRUCache(10)
+	lru := NewLRUCache(10)
 	for i := 0; i < 10; i++ {
-		obj := &TestObject{strconv.Itoa(i)}
-		lru.Add(obj)
+		lru.Add(i, i)
 	}
 
 	assertCacheSize(t, lru, 10)
@@ -151,39 +175,39 @@ func TestLRU(t *testing.T) {
 	})
 }
 
-func assertLRUContent(t *testing.T, lru *cache.LRUCache, want ...[]string) {
+func assertLRUContent(t *testing.T, lru *LRUCache, want []string) {
 	t.Helper()
 
-	objs := lru.GetContentByOrder()
+	objs := serializeLruContent(lru)
 
-	for _, ss := range want {
+	for _, wantElem := range want {
 
-		if got, want := len(objs), len(ss); got != want {
-			continue
-		}
-
-		for i, s := range ss {
-			if got := objs[i].Key(); got != s {
+		found := false
+		for _, cacheElem := range objs {
+			if wantElem == cacheElem {
+				found = true
 				break
 			}
 		}
-		return
+		if !found {
+			t.Errorf("want %v not found in %v", wantElem, objs)
+			break
+		}
 	}
 
-	t.Errorf("got %v, want %v", objs, want)
 }
 
-func assertObject(t *testing.T, obj cache.Object, expect cache.Object) {
+func assertObject(t *testing.T, obj interface{}, expect interface{}) {
 	t.Helper()
-	if obj != expect {
+	if !reflect.DeepEqual(obj, expect) {
 		t.Errorf("got %v, expected %v", obj, expect)
 	}
 }
 
-func assertLRUContains(t *testing.T, lru cache.LRU, want string) {
+func assertLRUContains(t *testing.T, lru LRU, want string) {
 	t.Helper()
 
-	objs := lru.GetContentByOrder()
+	objs := serializeLruContent(lru)
 
 	if !contains(objs, want) {
 		t.Errorf("%q not expected in %v", want, objs)
@@ -191,28 +215,28 @@ func assertLRUContains(t *testing.T, lru cache.LRU, want string) {
 
 }
 
-func contains(container []cache.Object, want string) bool {
-	for _, obj := range container {
-		if obj.Key() == want {
+func contains(objs []string, want string) bool {
+	for _, obj := range objs {
+		if reflect.DeepEqual(obj, want) {
 			return true
 		}
 	}
 	return false
 }
 
-func assertLRUNotContains(t *testing.T, lru cache.LRU, want string) {
+func assertLRUNotContains(t *testing.T, lru LRU, want string) {
 	t.Helper()
 
-	objs := lru.GetContentByOrder()
+	objs := serializeLruContent(lru)
 
 	for _, obj := range objs {
-		if obj.Key() == want {
+		if obj == want {
 			t.Fatalf("%q not expected in %v", want, objs)
 		}
 	}
 }
 
-func assertCacheSize(t *testing.T, lru cache.Cache, want uint) {
+func assertCacheSize(t *testing.T, lru ICache, want uint) {
 	t.Helper()
 	if got := lru.Size(); got != want {
 		t.Errorf("Cache len is %d, expect %d", got, want)

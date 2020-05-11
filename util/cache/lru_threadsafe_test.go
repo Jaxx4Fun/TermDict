@@ -1,7 +1,6 @@
-package cache_test
+package cache
 
 import (
-	"github.com/Johnny4Fun/TermDict/util/cache"
 	"strconv"
 	"strings"
 	"testing"
@@ -10,7 +9,7 @@ import (
 
 func TestLRUThreadSafe(t *testing.T) {
 	t.Run("Cache add", func(t *testing.T) {
-		lru := cache.NewThreadSafeLRU(cache.NewLRUCache(10))
+		lru := NewThreadSafeLRU(NewLRUCache(10))
 
 		batchAddMultiThread(lru, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 
@@ -40,18 +39,17 @@ func TestLRUThreadSafe(t *testing.T) {
 	})
 
 	t.Run("empty Cache pop", func(t *testing.T) {
-		lru := cache.NewThreadSafeLRU(cache.NewLRUCache(10))
+		lru := NewThreadSafeLRU(NewLRUCache(10))
 		doConcurrently(func(index int) {
-			obj := lru.PopFront()
+			obj := lru.PopOldest()
 			assertObject(t, obj, nil)
 		}, 0, 1, 2, 3)
 	})
 
 	t.Run("query when cache is either not empty or not full", func(t *testing.T) {
-		lru := cache.NewLRUCache(20)
+		lru := NewLRUCache(20)
 		for i := 0; i < 10; i++ {
-			obj := &TestObject{strconv.Itoa(i)}
-			lru.Add(obj)
+			lru.Add(i, i)
 		}
 
 		assertCacheSize(t, lru, 10)
@@ -59,7 +57,7 @@ func TestLRUThreadSafe(t *testing.T) {
 		t.Run("query item from start/mid/tail", func(t *testing.T) {
 			within(t, 5*time.Second, func() {
 				wg := doConcurrently(func(index int) {
-					lru.Get(strconv.Itoa(index))
+					lru.Get(index)
 				}, 0, 5, 9)
 				wg.Wait()
 			})
@@ -72,10 +70,9 @@ func TestLRUThreadSafe(t *testing.T) {
 
 	})
 	t.Run("query when cache is full", func(t *testing.T) {
-		lru := cache.NewLRUCache(10)
+		lru := NewLRUCache(10)
 		for i := 0; i < 10; i++ {
-			obj := &TestObject{strconv.Itoa(i)}
-			lru.Add(obj)
+			lru.Add(i, i)
 		}
 
 		assertCacheSize(t, lru, 10)
@@ -83,7 +80,7 @@ func TestLRUThreadSafe(t *testing.T) {
 		t.Run("query item from start/mid/tail", func(t *testing.T) {
 			within(t, 5*time.Second, func() {
 				wg := doConcurrently(func(index int) {
-					lru.Get(strconv.Itoa(index))
+					lru.Get(index)
 				}, 0, 5, 9)
 				wg.Wait()
 			})
